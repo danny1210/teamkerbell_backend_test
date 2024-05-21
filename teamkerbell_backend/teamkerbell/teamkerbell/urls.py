@@ -20,8 +20,7 @@ schema_view = get_schema_view(
     validators=['flex'],
     public=True,
     permission_classes=(AllowAny,),
-       url='https://port-0-teamkerbelldjango-rm6l2llwbxs0ho.sel5.cloudtype.app/', # HTTPS URL을 여기에 지정
-
+       url='http://localhost:8000/', # HTTPS URL을 여기에 지정
 )
 
 
