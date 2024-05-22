@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
-from .serializers import AcceptSerializer, LoginUserSerializer, BasicUserSerializer, ResumeSerializer, UserSerializer, BookmarkSerializer, CompListSerializer, TeamAndCompNameSerializer, ResumeAndRoleAndTagSerializer
+from .serializers import AcceptSerializer, LoginUserSerializer, BasicUserSerializer, ResumeSerializer, UserSerializer, BookmarkSerializer, CompListSerializer, TeamAndCompNameSerializer, ResumeAndRoleAndTagSerializer, ProfileSerializer
 from django.contrib.auth import authenticate, login, logout
 from .models import BasicUser, Resume, Bookmark, Tag, Rude
 from comp.models import Comp
@@ -63,7 +63,7 @@ def logoutView(request):
         return JsonResponse({'message': 'Logout successful'})
 
 @swagger_auto_schema(method='get', tags=["유저 정보 가져오기/붙여넣기/삭제하기"])
-@swagger_auto_schema(methods=['PUT','DELETE'], request_body=UserSerializer, tags=["유저 정보 가져오기/붙여넣기/삭제하기"])          
+@swagger_auto_schema(methods=['PUT','DELETE'], request_body=ProfileSerializer, tags=["유저 정보 가져오기/붙여넣기/삭제하기"])          
 @api_view(['GET','PUT','DELETE'])
 
 def getUserForId(request, user_id):
@@ -73,11 +73,11 @@ def getUserForId(request, user_id):
         return Response({'error' : {'code' : 404, 'message' : "User not found!"}}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == "GET":
-        serializer = UserSerializer(user)
+        serializer = ProfileSerializer(user)
         return Response(serializer.data) 
 
     elif request.method == 'PUT':
-        user_serializer = UserSerializer(user, data=request.data)
+        user_serializer = ProfileSerializer(user, data=request.data)
         if user_serializer.is_valid():
             user_serializer.save()
             return Response(user_serializer.data)
@@ -86,7 +86,6 @@ def getUserForId(request, user_id):
     elif request.method == 'DELETE':
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 @swagger_auto_schema(method='GET', tags=["이력서 리스트 가져오기/쓰기"])
 @swagger_auto_schema(methods=['POST'], request_body=ResumeSerializer, tags=["이력서 리스트 가져오기/쓰기"])

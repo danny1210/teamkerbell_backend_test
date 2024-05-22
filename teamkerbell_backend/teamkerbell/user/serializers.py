@@ -13,6 +13,11 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model= BasicUser
         fields='__all__'
+        
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model= BasicUser
+        fields=['id','email','nickname','phone','img']
 
 
 class TagSerializer(serializers.ModelSerializer):
