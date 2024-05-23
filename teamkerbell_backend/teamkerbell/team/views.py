@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
-from .models import Team, TeamEndVote, TeamRole, TeamMate, OutReason
-from .serializers import ScheduleAndCommitSerializer, ScheduleSerializer,TeamMateSerializer, ResumeAndRoleAndImgSerializer,  MemberListSerializer, ReportSerializer, KickAndRunSerializer, CombinedSerializer, IdSerializer, PlusMatchingSerializer, ScoreTagSerializer, ImprovementSerializer, ReviewSerializer
+from .models import PreviousWinning, Team, TeamEndVote, TeamRole, TeamMate, OutReason
+from .serializers import PreviousWinningSerializer,ScheduleAndCommitSerializer, ScheduleSerializer,TeamMateSerializer, ResumeAndRoleAndImgSerializer,  MemberListSerializer, ReportSerializer, KickAndRunSerializer, CombinedSerializer, IdSerializer, PlusMatchingSerializer, ScoreTagSerializer, ImprovementSerializer, ReviewSerializer
 from comp.models import RandomMatching, CompReview, Comp
 from user.models import BasicUser, Resume, Tag, Rude
 import random
@@ -352,4 +352,6 @@ def teamCompInfo(requset, team_id):
     if requset.method == 'GET':
         comp= Comp.objects.get(id=team.comp.id)
         serializer = CompSerializer(comp)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        winning = PreviousWinning.objects.filter(comp=team.comp)
+        winningserializer = PreviousWinningSerializer(winning, many=True)
+        return Response({"compInfo":serializer.data, "priviousWinningList":winningserializer.data}, status=status.HTTP_200_OK)

@@ -70,13 +70,17 @@ class TeamAndCompNameSerializer(serializers.ModelSerializer):
             return None
         
 class ResumeAndRoleAndTagAndImgSerializer(serializers.ModelSerializer):
+    score= serializers.SerializerMethodField()
     role = serializers.SerializerMethodField()
     tag = serializers.SerializerMethodField()
     img=serializers.SerializerMethodField()
     class Meta:
         model = Resume
         fields = '__all__'
-
+    def get_score(self, obj):
+        user = obj.user
+        return user.score
+    
     def get_role(self, obj):
         team = self.context.get('team')
         teammate = TeamMate.objects.filter(resume=obj, team=team).first()
@@ -99,10 +103,15 @@ class AcceptSerializer(serializers.Serializer):
     accept = serializers.BooleanField()
 
 class ResumeAndImgSerializer(serializers.ModelSerializer):
+    score=serializers.SerializerMethodField()
     img=serializers.SerializerMethodField()
+
     class Meta:
         model = Resume
         fields = '__all__'
+    def get_score(self, obj):
+        user = obj.user
+        return user.score
     def get_img(self, obj):
         user=BasicUser.objects.filter(id=obj.user.id).first()
         if user:
@@ -111,8 +120,12 @@ class ResumeAndImgSerializer(serializers.ModelSerializer):
             return None
 
 class ResumeAndImgAndTagSerializer(serializers.ModelSerializer):
+    score=serializers.SerializerMethodField()
     img=serializers.SerializerMethodField()
     tag=serializers.SerializerMethodField()
+    def get_score(self, obj):
+        user = obj.user
+        return user.score
     class Meta:
         model = Resume
         fields = '__all__'

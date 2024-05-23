@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
-from .serializers import AcceptSerializer, LoginUserSerializer, BasicUserSerializer, ResumeSerializer, UserSerializer, BookmarkSerializer, CompListSerializer, TeamAndCompNameSerializer, ResumeAndRoleAndTagAndImgSerializer, ProfileSerializer
+from .serializers import ResumeAndImgAndTagSerializer, AcceptSerializer, LoginUserSerializer, BasicUserSerializer, ResumeSerializer, UserSerializer, BookmarkSerializer, CompListSerializer, TeamAndCompNameSerializer, ResumeAndRoleAndTagAndImgSerializer, ProfileSerializer
 from django.contrib.auth import authenticate, login, logout
 from .models import BasicUser, Resume, Bookmark, Tag, Rude
 from comp.models import Comp
@@ -113,7 +113,7 @@ def manageResume(request, user_id):
         resumes = Resume.objects.filter(user=user_id)  
         # Resume들 중에 user 값이(model에 정의된 model이라는 값) user_id인 값 
         if resumes.exists():  # 이력서가 존재하는지 확인
-            serializer = ResumeSerializer(resumes, many=True)
+            serializer=ResumeAndImgAndTagSerializer(resumes, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response({'error': {'code': 404, 'message': "Resumes not found!"}}, status=status.HTTP_404_NOT_FOUND)

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Team, ChooseTeam, TeamRole, TeamMate, Schedule,  OutReason
+from .models import Team, ChooseTeam, TeamRole, TeamMate, Schedule,  OutReason, PreviousWinning
 from user.models import Resume, BasicUser, Rude
 
 
@@ -42,10 +42,15 @@ class ScheduleAndCommitSerializer(serializers.Serializer):
 class ResumeAndRoleAndImgSerializer(serializers.ModelSerializer):
     role = serializers.SerializerMethodField()
     img=serializers.SerializerMethodField()
+    score=serializers.SerializerMethodField()
     class Meta:
         model = Resume
         fields = '__all__'
         extra_kwargs = {'user': {'read_only': True}}
+
+    def get_score(self, obj):
+        user = obj.user
+        return user.score
     
     def get_role(self, obj):
         team = self.context.get('team')
@@ -112,3 +117,8 @@ class TeamRoleForApplySerializer(serializers.ModelSerializer):
     class Meta:
         model = TeamRole
         fields=['role','recruitNum','num']
+
+class PreviousWinningSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PreviousWinning
+        fields=['img','comp','title','interview']
