@@ -69,9 +69,10 @@ class TeamAndCompNameSerializer(serializers.ModelSerializer):
         else:
             return None
         
-class ResumeAndRoleAndTagSerializer(serializers.ModelSerializer):
+class ResumeAndRoleAndTagAndImgSerializer(serializers.ModelSerializer):
     role = serializers.SerializerMethodField()
     tag = serializers.SerializerMethodField()
+    img=serializers.SerializerMethodField()
     class Meta:
         model = Resume
         fields = '__all__'
@@ -87,6 +88,41 @@ class ResumeAndRoleAndTagSerializer(serializers.ModelSerializer):
         user = obj.user
         top_tags = Tag.objects.filter(user=user).order_by('-count')[:4]
         return [tag.num for tag in top_tags]
+    def get_img(self, obj):
+        user=BasicUser.objects.filter(id=obj.user.id).first()
+        if user:
+            return user.img
+        else:
+            return None
 
 class AcceptSerializer(serializers.Serializer):
     accept = serializers.BooleanField()
+
+class ResumeAndImgSerializer(serializers.ModelSerializer):
+    img=serializers.SerializerMethodField()
+    class Meta:
+        model = Resume
+        fields = '__all__'
+    def get_img(self, obj):
+        user=BasicUser.objects.filter(id=obj.user.id).first()
+        if user:
+            return user.img
+        else:
+            return None
+
+class ResumeAndImgAndTagSerializer(serializers.ModelSerializer):
+    img=serializers.SerializerMethodField()
+    tag=serializers.SerializerMethodField()
+    class Meta:
+        model = Resume
+        fields = '__all__'
+    def get_img(self, obj):
+        user=BasicUser.objects.filter(id=obj.user.id).first()
+        if user:
+            return user.img
+        else:
+            return None
+    def get_tag(self, obj):
+        user = obj.user
+        top_tags = Tag.objects.filter(user=user).order_by('-count')[:4]
+        return [tag.num for tag in top_tags]
