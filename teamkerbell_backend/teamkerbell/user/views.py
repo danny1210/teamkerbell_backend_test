@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
-from .serializers import AcceptSerializer, LoginUserSerializer, BasicUserSerializer, ResumeSerializer, UserSerializer, BookmarkSerializer, CompListSerializer, TeamAndCompNameSerializer, ResumeAndRoleAndTagSerializer, ProfileSerializer
+from .serializers import ResumeAndImgAndTagSerializer, AcceptSerializer, LoginUserSerializer, BasicUserSerializer, ResumeSerializer, UserSerializer, BookmarkSerializer, CompListSerializer, TeamAndCompNameSerializer, ResumeAndRoleAndTagAndImgSerializer, ProfileSerializer
 from django.contrib.auth import authenticate, login, logout
 from .models import BasicUser, Resume, Bookmark, Tag, Rude
 from comp.models import Comp
@@ -113,7 +113,7 @@ def manageResume(request, user_id):
         resumes = Resume.objects.filter(user=user_id)  
         # Resume들 중에 user 값이(model에 정의된 model이라는 값) user_id인 값 
         if resumes.exists():  # 이력서가 존재하는지 확인
-            serializer = ResumeSerializer(resumes, many=True)
+            serializer=ResumeAndImgAndTagSerializer(resumes, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response({'error': {'code': 404, 'message': "Resumes not found!"}}, status=status.HTTP_404_NOT_FOUND)
@@ -237,7 +237,8 @@ def myTeamList(request, user_id):
     except BasicUser.DoesNotExist:
         return Response({'error' : {'code' : 404, 'message' : "User not found!"}}, status=status.HTTP_404_NOT_FOUND)
     if request.method == 'GET':
-        team = Team.objects.filter(leader=user_id, isDone=True)
+        teamid= TeamMate.objects.filter(user=user_id, isTeam=True).values_list('team', flat=True)
+        team = Team.objects.filter(id__in=teamid, isDone=True)
         yourTeam = Team.objects.filter(leader=user_id, isDone=False)
         joinTeam = TeamMate.objects.filter(user=user_id, isTeam=False).values_list('team', flat=True)
         joinTeam_teams = Team.objects.filter(id__in=joinTeam)
@@ -345,9 +346,9 @@ def resumeList(request, user_id, team_id):
     except BasicUser.DoesNotExist:
         return Response({'error' : {'code' : 404, 'message' : "User not found!"}}, status=status.HTTP_404_NOT_FOUND)
     if request.method == 'GET':
-        resumeId = TeamMate.objects.filter(team=team).values_list('resume', flat=True)
+        resumeId = TeamMate.objects.filter(team=team, isTeam=False).values_list('resume', flat=True)
         resumeList = Resume.objects.filter(id__in=resumeId)
-        serializer = ResumeAndRoleAndTagSerializer(resumeList, many=True, context={'team': team})
+        serializer = ResumeAndRoleAndTagAndImgSerializer(resumeList, many=True, context={'team': team})
         return Response(serializer.data, status=status.HTTP_200_OK)
         
 
@@ -368,7 +369,7 @@ def resumeAccept(request, user_id, team_id, resume_id):
     except Resume.DoesNotExist:
         return Response({'error' : {'code' : 404, 'message' : "Resume not found!"}}, status=status.HTTP_404_NOT_FOUND)
     if request.method=='GET':
-        serializer = ResumeSerializer(resume)
+        serializer = ResumeAndRoleAndTagAndImgSerializer(resume, context={'team': team})
         return Response(serializer.data, status=status.HTTP_200_OK)
     elif request.method=='POST':
         serializer = AcceptSerializer(data=request.data)
@@ -398,3 +399,5 @@ def resumeAccept(request, user_id, team_id, resume_id):
                 TeamMate.objects.filter(team=team, resume=resume, isTeam=False).delete()
                 return Response({'message': 'kick Accepted'}, status=status.HTTP_200_OK)
         
+
+    
