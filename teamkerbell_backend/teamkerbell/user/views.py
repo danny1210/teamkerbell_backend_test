@@ -10,6 +10,7 @@ from .models import BasicUser, Resume, Bookmark, Tag, Rude
 from comp.models import Comp
 from .decorator import login_required
 from team.models import Team, TeamEndVote, TeamMate, TeamRole, Schedule, ChooseTeam
+from comp.serializers import CompSerializer
 """
 @swagger_auto_schema(method="POST", tags=["유저 회원가입"], request_body=UserSerializer, operation_summary="유저 회원가입")
 @api_view(['POST'])
@@ -74,7 +75,7 @@ def getUserForId(request, user_id):
 
     if request.method == "GET":
         serializer = ProfileSerializer(user)
-        return Response(serializer.data) 
+        return Response(serializer.data, status=status.HTTP_200_OK) 
 
     elif request.method == 'PUT':
         user_serializer = ProfileSerializer(user, data=request.data)
@@ -86,6 +87,7 @@ def getUserForId(request, user_id):
     elif request.method == 'DELETE':
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 @swagger_auto_schema(method='GET', tags=["이력서 리스트 가져오기/쓰기"])
 @swagger_auto_schema(methods=['POST'], request_body=ResumeSerializer, tags=["이력서 리스트 가져오기/쓰기"])
@@ -190,7 +192,7 @@ def getCompLiked(request, user_id):
         #id__in 은 likedCompsIds 리스트에 포함된 어떤 값과도 일치하는 Comp 객체들을 모두 찾아라라는 뜻으로 해석
         
         if comps.exists():  # 찜한 Comps가 존재하는지 확인
-            serializer = CompListSerializer(comps, many=True)
+            serializer = CompSerializer(comps, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response({'error': {'code': 404, 'message': "No liked comps found!"}}, status=status.HTTP_404_NOT_FOUND)
@@ -399,5 +401,3 @@ def resumeAccept(request, user_id, team_id, resume_id):
                 TeamMate.objects.filter(team=team, resume=resume, isTeam=False).delete()
                 return Response({'message': 'kick Accepted'}, status=status.HTTP_200_OK)
         
-
-    
