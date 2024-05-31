@@ -264,22 +264,7 @@ def createwinner(request, comp_id):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-@swagger_auto_schema(method='POST', tags=["랜덤매칭 priority 초기화 함수"])
-@api_view(['POST'])
-def priority_initializer(request, comp_id):
-    RandomWaiting = RandomMatching.objects.filter(comp_id=comp_id)
-    for instance in RandomWaiting:
-        instance.priority = 100
-        instance.save()
 
-
-@swagger_auto_schema(method='POST',tags=["랜덤매칭 완료 인원 DB 삭제"])
-@api_view(['POST'])
-def matched_delete(request, comp_id):
-    RandomWaiting = RandomMatching.objects.filter(comp_id=comp_id)
-    for instance in RandomWaiting:
-        if instance.isMatched == True:
-            instance.delete()
 
 
 @swagger_auto_schema(method='POST', tags=["랜덤매칭 알고리즘"],request_body=RandomMatchingSerializer,operation_summary="랜덤매칭")
@@ -289,54 +274,99 @@ def rmAlgorithms(request, comp_id):
     if request.method == 'POST':
 
             myInfoSerializer = RandomMatchingSerializer(data=request.data)
+            
         
             if myInfoSerializer.is_valid():
                 myInfoSerializer.save()
                 if myInfoSerializer.data['isLeader'] == True:
                     RandomWaiting = RandomMatching.objects.filter(comp_id=comp_id)
+                    for instance in RandomWaiting:
+                        instance.priority = 100
+                        instance.save()
+                        if instance.isLeader==True:
+                            instance.priority=1000
+                            instance.save()
                     city_to_compare = myInfoSerializer.data['city']
                     dong_to_compare = myInfoSerializer.data['dong']
                     isLeader_to_compare = myInfoSerializer.data['isLeader']
-                    role_to_compare = myInfoSerializer.data['role']
-                    for instance in RandomWaiting:
-                        if instance.city == city_to_compare:
-                            instance.priority += 10
-                            instance.save()
-                        if instance.dong == dong_to_compare:
-                            instance.priority += 20
-                            instance.save()
-                        if instance.isLeader == isLeader_to_compare:
-                            instance.priority -= 5
-                            instance.save()    
-                        if instance.role == role_to_compare:
-                            instance.priority -= 5
-                            instance.save()
+                    # role_to_compare = myInfoSerializer.data['role']
+                    role_to_compare = []
+                    role_to_compare.append(myInfoSerializer.data['role'])
                     n = myInfoSerializer.validated_data['recruitNum']
+                    for i in range(n):
+                        RandomWaiting = RandomMatching.objects.filter(comp_id=comp_id,isMatched=False)
+                        for instance in RandomWaiting:
+                            instance.priority = 100
+                            instance.save()
+                            if instance.isLeader==True:
+                                instance.priority=1000
+                                instance.save()
+                        for instance in RandomWaiting:
+                            if instance.city == city_to_compare:
+                                instance.priority += 10
+                                instance.save()
+                            if instance.dong == dong_to_compare:
+                                instance.priority += 20
+                                instance.save()
+                            if instance.isLeader == isLeader_to_compare:
+                                instance.priority -= 5
+                                instance.save()    
+                            if instance.role in role_to_compare:
+                                instance.priority -= 40
+                                instance.save()
+                        sorted_data = RandomMatching.objects.filter(comp_id=comp_id,isMatched=False).order_by('-priority')[:1]
+                        temp = sorted_data.first()
+                        if temp:
+                            temp.isMatched=True
+                            temp.save()
+                        role_to_compare.append(temp.role)
+                    
+                
                     try:
-                        sorted_data = RandomMatching.objects.filter(comp_id=comp_id).order_by('-priority')[:n]
+                        sorted_data = RandomMatching.objects.filter(comp_id=comp_id,isMatched = True)
                     except:
                         return Response({'error': {'code': 404, 'message': "There are no enough people !!"}}, status=status.HTTP_404_NOT_FOUND)
                     
                     for instance in sorted_data:
                         instance.isMatched = True
-                        instance.save()
-                    updated_seirializer = RandomMatchingSerializer(sorted_data, many =True)
-                    return Response(updated_seirializer.data, status=status.HTTP_201_CREATED)
+                        instance.save()  
+                    leaderMatching = RandomMatching.objects.filter(comp_id=comp_id,isLeader=True)
+                if leaderMatching is None:
+                    return Response({'error': {'code': 404, 'message': "No leader found in matching data!"}}, status=status.HTTP_404_NOT_FOUND)
+                leaderMatching = RandomMatching.objects.filter(comp_id=comp_id,isLeader=True).first()
+                try:
+                    comp = Comp.objects.get(id=comp_id)
+                except Comp.DoesNotExist:
+                    return Response({'error': {'code': 404, 'message': "comp not found!"}}, status=status.HTTP_404_NOT_FOUND)
+
+                newTeam = Team(comp=comp, recruitNum=n, leader=leaderMatching.user, isRandom=True, isDone = True)
+                newTeam.save()
+
+                roles_count = {
+                    "프론트엔드": 0,
+                    "백엔드": 0,
+                    "디자인": 0,
+                    "기획": 0
+                }
+
+                for instance in sorted_data:
+                    if instance.role in roles_count:
+                        roles_count[instance.role] += 1
+
+                for role, count in roles_count.items():
+                    if count > 0:
+                        TeamRole(role=role, team=newTeam, recruitNum=count, num=count).save()
+
+                for userR in sorted_data[:n]:
+                    dummyresume = Resume(user=userR.user, name=userR.user.nickname, email=userR.user.email, phone=userR.user.phone, tier="없음", userIntro="없음", skill="없음", experience="없음", githubLink="없음", snsLink="없음", city=userR.city, dong=userR.dong)
+                    dummyresume.save()
+                    TeamMate(team=newTeam, user=userR.user, resume=dummyresume, role=userR.role, isTeam=True).save()
+                    userR.delete()      
+             
+            
                 
+                return Response(status=status.HTTP_201_CREATED)
 
             return Response({'error': {'code': 404, 'message': "Request is not Valid !!"}}, status=status.HTTP_404_NOT_FOUND)
     
-    # elif request.method == 'GET':
-    #     try:
-    #         makeTeam = RandomMatching.objects.filter(comp=comp_id)
-
-    #         # comp = Comp.objects.get(id=comp_id)
-    #         # allMembers = RandomMatchingSerializer(comp=comp , many=True)
-    #         # sorted_data = sorted(allMembers.data, key=lambda x: x['user']['id'])
-    #         # return Response({"Your Random Team Members ! :": sorted_data})
-    #     except:
-    #         return Response({'error': {'code': 404, 'message': "team not found!"}}, status=status.HTTP_404_NOT_FOUND)
-    #     serializer = RandomMatchingSerializer(makeTeam,many=True)
-    #     sorted_data = sorted(serializer.data,key=lambda x:x['user']['id'])
-        
-    #     return Response(sorted_data , status=status.HTTP_200_OK)
+ 
